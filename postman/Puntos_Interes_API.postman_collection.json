@@ -1,0 +1,347 @@
+{
+  "info": {
+    "name": "Puntos de Interés - España API",
+    "description": "Colección completa de endpoints para gestionar puntos de interés en España usando PostGIS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "punto_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. GET - Todos los Puntos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has success property\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Response has data array\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos"]
+        },
+        "description": "Obtiene todos los puntos de interés almacenados en la base de datos"
+      },
+      "response": []
+    },
+    {
+      "name": "2. GET - Punto por ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has punto data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('nombre');",
+              "    pm.expect(jsonData.data).to.have.property('latitud');",
+              "    pm.expect(jsonData.data).to.have.property('longitud');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "1"]
+        },
+        "description": "Obtiene un punto de interés específico por su ID"
+      },
+      "response": []
+    },
+    {
+      "name": "3. GET - Puntos por Categoría",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/categoria/Museo",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "categoria", "Museo"]
+        },
+        "description": "Filtra puntos de interés por categoría (Museo, Monumento, Playa, etc.)"
+      },
+      "response": []
+    },
+    {
+      "name": "4. GET - Puntos Cercanos (Madrid 50km)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/cerca/-3.7038/40.4168?radio=50000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "cerca", "-3.7038", "40.4168"],
+          "query": [
+            {
+              "key": "radio",
+              "value": "50000",
+              "description": "Radio en metros (50000 = 50km)"
+            }
+          ]
+        },
+        "description": "Busca puntos de interés dentro de un radio de 50km desde Madrid (Puerta del Sol)"
+      },
+      "response": []
+    },
+    {
+      "name": "5. GET - Puntos Cercanos (Barcelona 100km)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/cerca/2.1686/41.3874?radio=100000",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "cerca", "2.1686", "41.3874"],
+          "query": [
+            {
+              "key": "radio",
+              "value": "100000",
+              "description": "Radio en metros (100000 = 100km)"
+            }
+          ]
+        },
+        "description": "Busca puntos de interés dentro de un radio de 100km desde Barcelona (Plaza Catalunya)"
+      },
+      "response": []
+    },
+    {
+      "name": "6. POST - Crear Nuevo Punto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Response has created data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.be.true;",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "});",
+              "",
+              "// Guardar el ID del punto creado",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set(\"punto_id\", jsonData.data.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Catedral de Sevilla\",\n  \"descripcion\": \"La catedral gótica más grande del mundo, declarada Patrimonio de la Humanidad por la UNESCO\",\n  \"categoria\": \"Catedral\",\n  \"direccion\": \"Av. de la Constitución, s/n\",\n  \"ciudad\": \"Sevilla\",\n  \"provincia\": \"Sevilla\",\n  \"codigo_postal\": \"41004\",\n  \"telefono\": \"+34 954 21 49 71\",\n  \"email\": \"info@catedralsevilla.es\",\n  \"website\": \"https://www.catedralsevilla.es\",\n  \"latitud\": 37.3860,\n  \"longitud\": -5.9930\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/puntos",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos"]
+        },
+        "description": "Crea un nuevo punto de interés con todos los campos"
+      },
+      "response": []
+    },
+    {
+      "name": "7. POST - Crear Punto Mínimo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Mi Lugar Favorito\",\n  \"categoria\": \"Otro\",\n  \"ciudad\": \"Madrid\",\n  \"provincia\": \"Madrid\",\n  \"latitud\": 40.4168,\n  \"longitud\": -3.7038\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/puntos",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos"]
+        },
+        "description": "Crea un punto de interés con solo los campos requeridos"
+      },
+      "response": []
+    },
+    {
+      "name": "8. POST - Carga Masiva (Batch) - Monumentos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Multiple points created\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.count).to.be.above(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"puntos\": [\n    {\n      \"nombre\": \"Torre de Hércules\",\n      \"descripcion\": \"Faro romano del siglo I d.C., el más antiguo en funcionamiento\",\n      \"categoria\": \"Monumento\",\n      \"direccion\": \"Av. Navarra, s/n\",\n      \"ciudad\": \"A Coruña\",\n      \"provincia\": \"A Coruña\",\n      \"codigo_postal\": \"15002\",\n      \"telefono\": \"+34 981 22 37 30\",\n      \"latitud\": 43.3856,\n      \"longitud\": -8.4063\n    },\n    {\n      \"nombre\": \"Casa Batlló\",\n      \"descripcion\": \"Edificio modernista diseñado por Antoni Gaudí\",\n      \"categoria\": \"Monumento\",\n      \"direccion\": \"Passeig de Gràcia, 43\",\n      \"ciudad\": \"Barcelona\",\n      \"provincia\": \"Barcelona\",\n      \"codigo_postal\": \"08007\",\n      \"telefono\": \"+34 932 16 03 06\",\n      \"website\": \"https://www.casabatllo.es\",\n      \"latitud\": 41.3916,\n      \"longitud\": 2.1649\n    },\n    {\n      \"nombre\": \"Acueducto de Segovia\",\n      \"descripcion\": \"Acueducto romano del siglo I d.C.\",\n      \"categoria\": \"Monumento\",\n      \"ciudad\": \"Segovia\",\n      \"provincia\": \"Segovia\",\n      \"codigo_postal\": \"40001\",\n      \"latitud\": 40.9480,\n      \"longitud\": -4.1248\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/puntos/batch",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "batch"]
+        },
+        "description": "Crea múltiples puntos de interés en una sola petición"
+      },
+      "response": []
+    },
+    {
+      "name": "9. POST - Carga Masiva - Museos",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"puntos\": [\n    {\n      \"nombre\": \"Museo Guggenheim Bilbao\",\n      \"descripcion\": \"Museo de arte contemporáneo diseñado por Frank Gehry\",\n      \"categoria\": \"Museo\",\n      \"direccion\": \"Abandoibarra Etorbidea, 2\",\n      \"ciudad\": \"Bilbao\",\n      \"provincia\": \"Vizcaya\",\n      \"codigo_postal\": \"48009\",\n      \"telefono\": \"+34 944 35 90 80\",\n      \"website\": \"https://www.guggenheim-bilbao.eus\",\n      \"latitud\": 43.2687,\n      \"longitud\": -2.9338\n    },\n    {\n      \"nombre\": \"Museo Thyssen-Bornemisza\",\n      \"descripcion\": \"Museo de arte con una colección de más de 1000 obras\",\n      \"categoria\": \"Museo\",\n      \"direccion\": \"Paseo del Prado, 8\",\n      \"ciudad\": \"Madrid\",\n      \"provincia\": \"Madrid\",\n      \"codigo_postal\": \"28014\",\n      \"telefono\": \"+34 917 91 13 70\",\n      \"website\": \"https://www.museothyssen.org\",\n      \"latitud\": 40.4160,\n      \"longitud\": -3.6945\n    },\n    {\n      \"nombre\": \"Museo Reina Sofía\",\n      \"descripcion\": \"Museo nacional de arte del siglo XX. Alberga el Guernica\",\n      \"categoria\": \"Museo\",\n      \"direccion\": \"Calle de Santa Isabel, 52\",\n      \"ciudad\": \"Madrid\",\n      \"provincia\": \"Madrid\",\n      \"codigo_postal\": \"28012\",\n      \"telefono\": \"+34 917 74 10 00\",\n      \"website\": \"https://www.museoreinasofia.es\",\n      \"latitud\": 40.4086,\n      \"longitud\": -3.6944\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/puntos/batch",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "batch"]
+        },
+        "description": "Carga masiva de museos"
+      },
+      "response": []
+    },
+    {
+      "name": "10. PUT - Actualizar Punto",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"descripcion\": \"Descripción actualizada del punto de interés\",\n  \"telefono\": \"+34 912 345 678\",\n  \"website\": \"https://www.nuevo-sitio-web.com\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/puntos/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "1"]
+        },
+        "description": "Actualiza un punto de interés existente. Solo actualiza los campos enviados."
+      },
+      "response": []
+    },
+    {
+      "name": "11. DELETE - Eliminar Punto",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/{{punto_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "{{punto_id}}"]
+        },
+        "description": "Elimina un punto de interés. Usa la variable punto_id guardada."
+      },
+      "response": []
+    },
+    {
+      "name": "12. GET - Categorías Disponibles",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/puntos/meta/categorias",
+          "host": ["{{base_url}}"],
+          "path": ["api", "puntos", "meta", "categorias"]
+        },
+        "description": "Obtiene todas las categorías únicas de puntos de interés"
+      },
+      "response": []
+    },
+    {
+      "name": "13. GET - Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        },
+        "description": "Verifica que el servidor esté funcionando correctamente"
+      },
+      "response": []
+    }
+  ]
+}

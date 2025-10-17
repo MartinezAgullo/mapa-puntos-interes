@@ -1,0 +1,492 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f5f5;
+    overflow: hidden;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* Panel lateral */
+.sidebar {
+    width: 350px;
+    background: white;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.sidebar-header h1 {
+    font-size: 1.8em;
+    margin-bottom: 5px;
+}
+
+.sidebar-header p {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+/* Controles */
+.controls {
+    margin-bottom: 20px;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.control-group select,
+.control-group input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.control-group select:focus,
+.control-group input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    margin-top: 10px;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Lista de puntos */
+.puntos-list {
+    margin-top: 20px;
+}
+
+.punto-item {
+    background: #f8f9fa;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 4px solid #667eea;
+}
+
+.punto-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.punto-item.active {
+    background: #e7f0ff;
+    border-left-color: #764ba2;
+}
+
+.punto-nombre {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.punto-categoria {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #667eea;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75em;
+    margin-bottom: 5px;
+}
+
+.punto-ciudad {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.punto-distancia {
+    color: #28a745;
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+/* Mapa */
+.map-container {
+    flex: 1;
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Popup personalizado */
+.custom-popup .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    padding: 0;
+}
+
+.popup-content {
+    padding: 15px;
+}
+
+.popup-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.popup-categoria {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #667eea;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+.popup-info {
+    color: #666;
+    line-height: 1.6;
+}
+
+.popup-info p {
+    margin: 5px 0;
+}
+
+.popup-info strong {
+    color: #333;
+}
+
+/* Loading spinner */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2000;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: none;
+}
+
+.loading.show {
+    display: block;
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mensajes */
+.message {
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 8px;
+    display: none;
+}
+
+.message.show {
+    display: block;
+}
+
+.message-success {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.message-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.message-info {
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+
+/* Estadísticas */
+.stats {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.stats h3 {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #667eea;
+}
+
+/* Formulario de nuevo punto */
+.form-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.form-modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    color: #333;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #999;
+    width: auto;
+}
+
+.close-btn:hover {
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: 40vh;
+    }
+
+    .map-container {
+        height: 60vh;
+    }
+
+    .sidebar-content {
+        padding: 15px;
+    }
+}
+
+/* Custom marker colors */
+.marker-museo { color: #e74c3c; }
+.marker-monumento { color: #3498db; }
+.marker-plaza { color: #2ecc71; }
+.marker-centro-cultural { color: #9b59b6; }
+.marker-catedral { color: #f39c12; }
+.marker-palacio { color: #1abc9c; }
+.marker-parque { color: #27ae60; }
+.marker-castillo { color: #c0392b; }
+.marker-playa { color: #16a085; }
+.marker-default { color: #667eea; }
+
+/* Colores personalizados para categorías militares */
+.marker-avion { color: #e74c3c; }
+.marker-tanque { color: #34495e; }
+.marker-drone { color: #3498db; }
+.marker-bsm { color: #95a5a6; }
+.marker-centro-de-mando { color: #e67e22; }
+.marker-unidad { color: #2ecc71; }
+.marker-sub-grupo-tactico { color: #9b59b6; }
+.marker-peloton { color: #f39c12; }
+.marker-vehiculo { color: #1abc9c; }
+.marker-artilleria { color: #c0392b; }
+.marker-infanteria { color: #16a085; }
+.marker-otro { color: #667eea; }
+
+/* Estilo mejorado para el título */
+.sidebar-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+    color: white;
+}
+
+/* Badges de categoría con colores militares */
+.punto-categoria {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #34495e;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75em;
+    margin-bottom: 5px;
+}
+
+.popup-categoria {
+    display: inline-block;
+    padding: 4px 12px;
+    background: #34495e;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-bottom: 10px;
+}
+
+/* Colores para categorías militares */
+.marker-avion { color: #e74c3c; }
+.marker-tanque { color: #34495e; }
+.marker-drone { color: #3498db; }
+.marker-bsm { color: #95a5a6; }
+.marker-centro-de-mando { color: #e67e22; }
+.marker-unidad { color: #2ecc71; }
+.marker-sub-grupo-tactico { color: #9b59b6; }
+.marker-peloton { color: #f39c12; }
+.marker-vehiculo { color: #1abc9c; }
+.marker-artilleria { color: #c0392b; }
+.marker-infanteria { color: #16a085; }
+
+/* Tema militar */
+.sidebar-header {
+    background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+}
+
+.punto-categoria,
+.popup-categoria {
+    background: #34495e;
+}

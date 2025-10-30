@@ -21,6 +21,7 @@ class PuntoInteres {
                 tipo_elemento,
                 prioridad,
                 observaciones,
+                altitud,
                 ST_X(geom) as longitud,
                 ST_Y(geom) as latitud,
                 created_at,
@@ -52,6 +53,7 @@ class PuntoInteres {
                 tipo_elemento,
                 prioridad,
                 observaciones,
+                altitud,
                 ST_X(geom) as longitud,
                 ST_Y(geom) as latitud,
                 created_at,
@@ -78,6 +80,12 @@ class PuntoInteres {
                 telefono,
                 email,
                 website,
+                elemento_identificado,
+                activo,
+                tipo_elemento,
+                prioridad,
+                observaciones,
+                altitud, /* <--- AÑADIDO: Campo altitud */
                 ST_X(geom) as longitud,
                 ST_Y(geom) as latitud,
                 created_at,
@@ -105,6 +113,7 @@ class PuntoInteres {
                 telefono,
                 email,
                 website,
+                altitud, /* <--- AÑADIDO: Campo altitud */
                 ST_X(geom) as longitud,
                 ST_Y(geom) as latitud,
                 ST_Distance(
@@ -142,52 +151,53 @@ class PuntoInteres {
                 tipo_elemento,
                 prioridad,
                 observaciones,
+                altitud,
                 geom
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, ST_SetSRID(ST_MakePoint($16, $17), 4326))
+            VALUES (
+                $1, $2, $3::categoria_militar, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 
+                $16,
+                ST_SetSRID(ST_MakePoint($17, $18), 4326)
+            )
             RETURNING
-                id,
-                nombre,
-                descripcion,
-                categoria,
-                direccion,
-                ciudad,
-                provincia,
-                codigo_postal,
-                telefono,
-                email,
-                website,
-                elemento_identificado,
-                activo,
-                tipo_elemento,
-                prioridad,
-                observaciones,
-                ST_X(geom) as longitud,
-                ST_Y(geom) as latitud,
-                created_at,
-                updated_at;
+                id, nombre, descripcion, categoria, direccion, ciudad, provincia,
+                codigo_postal, telefono, email, website, elemento_identificado,
+                activo, tipo_elemento, prioridad, observaciones, altitud, 
+                ST_X(geom) as longitud, ST_Y(geom) as latitud, created_at, updated_at;
         `;
+        
         const values = [
-            data.nombre,
-            data.descripcion,
-            data.categoria,
-            data.direccion,
-            data.ciudad,
-            data.provincia,
-            data.codigo_postal,
-            data.telefono,
-            data.email,
-            data.website,
-            data.elemento_identificado,
-            data.activo !== undefined ? data.activo : true,
-            data.tipo_elemento,
-            data.prioridad || 0,
-            data.observaciones,
-            data.longitud,
-            data.latitud
+            data.nombre ?? null,                             // $1
+            data.descripcion ?? null,                        // $2
+            data.categoria ?? null,                          // $3
+            data.direccion ?? null,                          // $4
+            data.ciudad ?? null,                             // $5
+            data.provincia ?? null,                          // $6
+            data.codigo_postal ?? null,                      // $7
+            data.telefono ?? null,                           // $8
+            data.email ?? null,                              // $9
+            data.website ?? null,                            // $10
+            data.elemento_identificado ?? null,              // $11
+            data.activo !== undefined ? data.activo : true,  // $12 ← BOOLEAN
+            data.tipo_elemento ?? null,                      // $13
+            data.prioridad ?? 0,                             // $14
+            data.observaciones ?? null,                      // $15
+            data.altitud ?? null,                            // $16
+            data.longitud,                                   // $17
+            data.latitud                                     // $18
         ];
-        const result = await pool.query(query, values);
-        return result.rows[0];
+        
+        try {
+            const result = await pool.query(query, values);
+            return result.rows[0];
+        } catch (error) {
+            console.error('❌ Error al crear punto de interés:', error);
+            console.error('   Data recibida:', data);
+            console.error('   Values array:', values);
+            console.error('   Error detail:', error.detail);
+            console.error('   Error hint:', error.hint);
+            throw error;
+        }
     }
 
     // Actualizar punto de interés
@@ -197,7 +207,7 @@ class PuntoInteres {
             SET
                 nombre = COALESCE($1, nombre),
                 descripcion = COALESCE($2, descripcion),
-                categoria = COALESCE($3, categoria),
+                categoria = COALESCE($3::categoria_militar, categoria),
                 direccion = COALESCE($4, direccion),
                 ciudad = COALESCE($5, ciudad),
                 provincia = COALESCE($6, provincia),
@@ -210,59 +220,57 @@ class PuntoInteres {
                 tipo_elemento = COALESCE($13, tipo_elemento),
                 prioridad = COALESCE($14, prioridad),
                 observaciones = COALESCE($15, observaciones),
-                geom = CASE
-                    WHEN $16 IS NOT NULL AND $17 IS NOT NULL
-                    THEN ST_SetSRID(ST_MakePoint($16, $17), 4326)
-                    ELSE geom
-                END,
+                altitud = COALESCE($16, altitud),
+                geom = COALESCE(
+                    ST_SetSRID(ST_MakePoint(CAST($17 AS DOUBLE PRECISION), CAST($18 AS DOUBLE PRECISION)), 4326),
+                    geom
+                ),
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $18
+            WHERE id = $19
             RETURNING
-                id,
-                nombre,
-                descripcion,
-                categoria,
-                direccion,
-                ciudad,
-                provincia,
-                codigo_postal,
-                telefono,
-                email,
-                website,
-                elemento_identificado,
-                activo,
-                tipo_elemento,
-                prioridad,
-                observaciones,
-                ST_X(geom) as longitud,
-                ST_Y(geom) as latitud,
-                created_at,
-                updated_at;
+                id, nombre, descripcion, categoria, direccion, ciudad, provincia,
+                codigo_postal, telefono, email, website, elemento_identificado,
+                activo, tipo_elemento, prioridad, observaciones, altitud, 
+                ST_X(geom) as longitud, ST_Y(geom) as latitud, created_at, updated_at; 
         `;
         const values = [
-            data.nombre,
-            data.descripcion,
-            data.categoria,
-            data.direccion,
-            data.ciudad,
-            data.provincia,
-            data.codigo_postal,
-            data.telefono,
-            data.email,
-            data.website,
-            data.elemento_identificado,
-            data.activo,
-            data.tipo_elemento,
-            data.prioridad,
-            data.observaciones,
-            data.longitud,
-            data.latitud,
-            id
+            data.nombre ?? null,              // $1  
+            data.descripcion ?? null,         // $2
+            data.categoria ?? null,           // $3
+            data.direccion ?? null,           // $4  
+            data.ciudad ?? null,              // $5
+            data.provincia ?? null,           // $6
+            data.codigo_postal ?? null,       // $7  
+            data.telefono ?? null,            // $8  
+            data.email ?? null,               // $9  
+            data.website ?? null,             // $10 
+            data.elemento_identificado ?? null, // $11
+            data.activo ?? null,              // $12
+            data.tipo_elemento ?? null,       // $13
+            data.prioridad ?? null,           // $14
+            data.observaciones ?? null,       // $15
+            data.altitud ?? null,             // $16
+            data.longitud ?? null,            // $17 
+            data.latitud ?? null,             // $18
+            id                                // $19
         ];
-        const result = await pool.query(query, values);
-        return result.rows[0];
+        try {
+            const result = await pool.query(query, values);
+            return result.rows[0];
+        } catch (error) {
+            // ✨ LOGGING DETALLADO
+            console.error('❌ Error al actualizar punto de interés:', error);
+            console.error('   Punto ID:', id);
+            console.error('   Data recibida:', data);
+            console.error('   Values array:', values);
+            console.error('   Error code:', error.code);
+            console.error('   Error detail:', error.detail);
+            console.error('   Error hint:', error.hint);
+            throw error;
+        }
     }
 
+    
     // Eliminar punto de interés
     static async delete(id) {
         const query = `DELETE FROM puntos_interes WHERE id = $1 RETURNING id;`;

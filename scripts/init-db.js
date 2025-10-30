@@ -50,6 +50,7 @@ const initDatabase = async () => {
                 tipo_elemento VARCHAR(100),
                 prioridad INTEGER DEFAULT 0,
                 observaciones TEXT,
+                altitud NUMERIC(10, 2),
                 geom GEOMETRY(Point, 4326) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -88,6 +89,7 @@ const initDatabase = async () => {
                 tipo_elemento,
                 prioridad,
                 observaciones,
+                altitud,
                 geom
             )
             VALUES
@@ -102,6 +104,7 @@ const initDatabase = async () => {
                     'Blindado Pesado',
                     9,
                     'Movimiento detectado hacia el este',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)
                 ),
                 (
@@ -115,6 +118,7 @@ const initDatabase = async () => {
                     'UAV Reconocimiento',
                     7,
                     'Volando a 500m de altitud',
+                    500, 
                     ST_SetSRID(ST_MakePoint(2.1686, 41.3874), 4326)
                 ),
                 (
@@ -128,6 +132,7 @@ const initDatabase = async () => {
                     'Comando y Control',
                     10,
                     'Operativo 24/7',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-0.3763, 39.4699), 4326)
                 ),
                 (
@@ -141,6 +146,7 @@ const initDatabase = async () => {
                     'Infantería',
                     6,
                     '30 efectivos',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-5.9845, 37.3891), 4326)
                 ),
                 (
@@ -154,6 +160,7 @@ const initDatabase = async () => {
                     'Unidad Táctica',
                     7,
                     'Desplegada en zona urbana',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-0.8891, 41.6488), 4326)
                 ),
                 (
@@ -167,6 +174,7 @@ const initDatabase = async () => {
                     'Grupo Táctico',
                     8,
                     'En coordinación con Unidad Bravo-1',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-2.9253, 43.2627), 4326)
                 ),
                 (
@@ -180,6 +188,7 @@ const initDatabase = async () => {
                     'Logística',
                     8,
                     'Capacidad 200 efectivos',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-8.4115, 43.3623), 4326)
                 ),
                 (
@@ -193,6 +202,7 @@ const initDatabase = async () => {
                     'Caza Multifunción',
                     9,
                     'Patrulla CAP activa',
+                    1000,
                     ST_SetSRID(ST_MakePoint(-3.5986, 37.1773), 4326)
                 ),
                 (
@@ -206,6 +216,7 @@ const initDatabase = async () => {
                     'Blindado Pesado',
                     8,
                     'En posición defensiva',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-4.4214, 36.7213), 4326)
                 ),
                 (
@@ -219,6 +230,7 @@ const initDatabase = async () => {
                     'UAV Exploración',
                     5,
                     'Área de reconocimiento ampliada',
+                    40,
                     ST_SetSRID(ST_MakePoint(-4.0273, 39.8628), 4326)
                 ),
                 (
@@ -232,6 +244,7 @@ const initDatabase = async () => {
                     'Prueba',
                     0,
                     'Elemento de prueba - desactivado',
+                    NULL,
                     ST_SetSRID(ST_MakePoint(-3.7100, 40.4200), 4326)
                 )
             ON CONFLICT DO NOTHING;

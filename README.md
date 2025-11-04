@@ -3,7 +3,7 @@
 Aplicación web para gestionar y visualizar elementos militares usando Leaflet, Node.js, Express y PostGIS.
 
 ## 🚀 Inicio Rápido
-```bash
+<!-- ```bash
 # 1. Instalar dependencias
 npm install
 
@@ -11,13 +11,86 @@ npm install
 docker compose up -d
 sleep 15
 
-# 3. Crear base de datos y tablas
+# 3. Crear base de datos y tablas 
 docker exec -i puntos_interes_postgis psql -U postgres -c "CREATE DATABASE puntos_interes_db;"
 npm run init-db
 
 # 4. Iniciar aplicación
 npm run dev
 ```
+
+<!-- To initilaise the database I can also do
+node scripts/init-db.js --> -->
+
+
+Mapa-Puntos-Interes PostgreSQL Setup Guide
+==========================================
+
+Quick setup guide to sync [TIFDA](https://github.com/MartinezAgullo/genai-tifda/tree/main) entities with the map visualization.
+
+* * * * *
+
+🚀 Quick Setup (First Time Only)
+--------------------------------
+
+bash
+
+```
+# 1. Start Docker Desktop
+open -a Docker
+# Wait ~30 seconds for Docker to start
+
+# 2. Start PostgreSQL container
+cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+docker compose up -d
+
+# 3. Initialize database
+node scripts/init-db.js
+
+# 4. Start mapa server
+npm run dev
+```
+
+**Done!** Mapa is now running at <http://localhost:3000>
+
+* * * * *
+
+📋 Daily Workflow
+-----------------
+
+### Starting Everything
+
+bash
+
+```
+# Terminal 1: Start PostgreSQL (if not running)
+cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+docker compose up -d
+
+# Terminal 2: Start mapa server
+npm run dev
+
+# Terminal 3: Start TIFDA UI
+cd /Users/pablo/Desktop/Scripts/tifda
+uv run python -m src.ui.gradio_interface
+
+# Terminal 4: Run tests
+uv run python tests/test_hitl_radar.py
+```
+
+### Stopping Everything
+
+bash
+
+```
+# Stop mapa server: Ctrl+C in terminal 2
+
+# Stop PostgreSQL:
+cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+docker compose down
+```
+
+
 
 Abrir: **http://localhost:3000**
 
@@ -96,6 +169,7 @@ mapa-puntos-interes/
 ## 🔄 Comandos Útiles
 ```bash
 # Reiniciar todo
+open -a Docker
 docker compose down -v
 docker compose up -d
 sleep 15
@@ -161,3 +235,7 @@ GNU General Public License (GPL) 3.0
 ---
 
 **Desarrollado con Node.js + Express + Leaflet + PostGIS**
+
+<!-- 
+tree -I "__pycache__|__init__.py|uv.lock|README.md|docs|node_modules"
+-->

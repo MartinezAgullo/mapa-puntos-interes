@@ -56,12 +56,12 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════════════════════╗
-║   🗺️  Servidor de Puntos de Interés iniciado          ║
+║   🗺️  Servidor de Puntos de Interés iniciado            ║
 ║                                                        ║
 ║   📡 Puerto: ${PORT}                                      ║
-║   🌍 URL: http://localhost:${PORT}                       ║
-║   📊 API: http://localhost:${PORT}/api/puntos           ║
-║   💚 Entorno: ${process.env.NODE_ENV || 'development'}                        ║
+║   🌍 URL: http://localhost:${PORT}                        ║
+║   📊 API: http://localhost:${PORT}/api/puntos             ║
+║   💚 Entorno: ${process.env.NODE_ENV || 'development'}                              ║
 ╚════════════════════════════════════════════════════════╝
     `);
 });

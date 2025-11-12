@@ -19,21 +19,116 @@ const ALLIANCE_COLORS = {
   unknown: '#A9A9A9'
 };
 
-function iconUrl(category, alliance) {
-  const a = (alliance || 'unknown').toLowerCase();
-  const c = (category || 'default').toLowerCase();
-  return `/icons/${a}/${c}.svg`;
+/**
+ * Mapeo de categorías → lista de nombres base preferidos (sin país).
+ * Se probarán en orden. Así aprovechamos tus archivos existentes.
+ */
+const CATEGORY_BASE_NAMES = {
+  missile:        ['missile'],
+  fighter:        ['fighter', 'fixed_wing'],
+  bomber:         ['bomber', 'fixed_wing'],
+  aircraft:       ['fixed_wing', 'air_and_space'],
+  helicopter:     ['helicopter', 'rotary_wing'],
+  uav:            ['uav'],
+  tank:           ['tank', 'armor_mechanized', 'ground'],
+  artillery:      ['artillery'],
+  ship:           ['ship', 'sea_surface'],
+  destroyer:      ['destroyer', 'ship'],
+  submarine:      ['submarine', 'sub_surface'],
+  ground_vehicle: ['ground', 'armor_mechanized', 'apc'],
+  apc:            ['apc', 'armor_mechanized'],
+  infantry:       ['infantry', 'ground'],
+  person:         ['person'],
+  base:           ['base', 'headquarters'],
+  building:       ['infrastructure'], // no hay "building", usamos infraestructura
+  infrastructure: ['infrastructure'],
+  default:        ['default']
+};
+
+// Cache de iconos resueltos para evitar múltiples HEADs
+const iconCache = new Map();
+
+/** Normaliza un país a minúsculas y sin espacios/acentos (para coincidir nombres de archivo). */
+function normalizeCountry(country) {
+  if (!country) return '';
+  // quitar tildes y espacios/puntuación
+  const s = country
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s\-_]+/g, '_')    // espacios → _
+    .replace(/[^a-z0-9_]/g, '');  // solo a-z0-9_
+  return s;
 }
 
-function makeIcon(category, alliance) {
+/**
+ * Dada una categoría, alliance y country, devuelve lista ordenada de candidatos de archivo (sin path).
+ * Ej: ['tank_spain.svg','tank.svg', 'armor_mechanized.svg', ...]
+ */
+function buildFilenameCandidates(category, alliance, country) {
+  const bases = CATEGORY_BASE_NAMES[category?.toLowerCase()] || CATEGORY_BASE_NAMES['default'];
+  const cn = normalizeCountry(country);
+  const tryCountry = country && country.toLowerCase() !== 'unknown' && cn;
+
+  const candidates = [];
+  for (const base of bases) {
+    if (tryCountry) candidates.push(`${base}_${cn}.svg`); // preferimos variante de país
+    candidates.push(`${base}.svg`);                       // luego el genérico
+  }
+  // siempre, como último recurso
+  candidates.push('default.svg');
+  return candidates;
+}
+
+/** HEAD para comprobar si existe un archivo estático. */
+async function urlExists(url) {
+  try {
+    const res = await fetch(url, { method: 'HEAD' });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resuelve la URL del icono según alliance + category + country,
+ * probando variantes por país y luego genérico. Devuelve un string URL válido.
+ */
+async function resolveIconUrl(category, alliance, country) {
+  const a = (alliance || 'unknown').toLowerCase();
+  const c = (category || 'default').toLowerCase();
+
+  // clave de cache
+  const key = `${a}|${c}|${normalizeCountry(country)}`;
+  if (iconCache.has(key)) return iconCache.get(key);
+
+  const candidates = buildFilenameCandidates(c, a, country);
+  for (const filename of candidates) {
+    const url = `/icons/${a}/${filename}`;
+    /* eslint-disable no-await-in-loop */
+    if (await urlExists(url)) {
+      iconCache.set(key, url);
+      return url;
+    }
+    /* eslint-enable no-await-in-loop */
+  }
+  // fallback absoluto
+  const fallback = `/icons/${a}/default.svg`;
+  iconCache.set(key, fallback);
+  return fallback;
+}
+
+/** Crea un L.Icon asíncrono (resuelve URL primero). */
+async function makeIcon(category, alliance, country) {
+  const iconUrl = await resolveIconUrl(category, alliance, country);
   return L.icon({
-    iconUrl: iconUrl(category, alliance),
+    iconUrl,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
-    popupAnchor: [0, -28],
+    popupAnchor: [0, -28]
   });
 }
 
+// Init
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   loadPuntos();
@@ -55,9 +150,9 @@ function initMap() {
 }
 
 function setupEventListeners() {
-  document.getElementById('categoriaFilter').addEventListener('change', filterPuntos);
-  document.getElementById('allianceFilter').addEventListener('change', filterPuntos);
-  document.getElementById('buscarNombre').addEventListener('input', filterPuntos);
+  document.getElementById('categoriaFilter').addEventListener('change', () => { filterPuntos(); });
+  document.getElementById('allianceFilter').addEventListener('change', () => { filterPuntos(); });
+  document.getElementById('buscarNombre').addEventListener('input', () => { filterPuntos(); });
 
   document.getElementById('nuevoPuntoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -77,7 +172,7 @@ async function loadPuntos() {
       updateStats();
       updateCategoriaFilter();
       renderPuntos();
-      addMarkersToMap();
+      await addMarkersToMap(); // importante: esperar a iconos
       showMessage('Puntos de interés cargados', 'success');
     } else {
       showMessage('Error al cargar puntos de interés', 'error');
@@ -90,7 +185,7 @@ async function loadPuntos() {
   }
 }
 
-function filterPuntos() {
+async function filterPuntos() {
   const categoria = document.getElementById('categoriaFilter').value;
   const alliance = document.getElementById('allianceFilter').value;
   const busqueda = document.getElementById('buscarNombre').value.toLowerCase();
@@ -103,7 +198,7 @@ function filterPuntos() {
   });
 
   renderPuntos();
-  addMarkersToMap();
+  await addMarkersToMap();
 }
 
 function renderPuntos() {
@@ -124,19 +219,23 @@ function renderPuntos() {
   `).join('');
 }
 
-function addMarkersToMap() {
+async function addMarkersToMap() {
+  // Limpiar
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  filteredPuntos.forEach(p => {
-    const icon = makeIcon(p.categoria, p.alliance);
+  // Crear marcadores con iconos resueltos
+  for (const p of filteredPuntos) {
+    /* eslint-disable no-await-in-loop */
+    const icon = await makeIcon(p.categoria, p.alliance, p.country);
     const marker = L.marker([p.latitud, p.longitud], { icon })
       .addTo(map)
       .bindPopup(createPopupContent(p), { className: 'custom-popup' });
 
     marker.on('click', () => selectPunto(p.id));
     markers.push(marker);
-  });
+    /* eslint-enable no-await-in-loop */
+  }
 
   if (markers.length > 0) {
     const group = new L.featureGroup(markers);

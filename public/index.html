@@ -1,179 +1,201 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Puntos de Interés - España</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mapa de Puntos de Interés</title>
 
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="/css/styles.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/styles.css"/>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Panel lateral -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h1>🗺️ Puntos de Interés</h1>
-                <p>Explora lugares emblemáticos de España</p>
-            </div>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>🗺️ Puntos de Interés</h1>
+        <p>Localización de Assets</p>
+      </div>
 
-            <div class="sidebar-content">
-                <!-- Estadísticas -->
-                <div class="stats">
-                    <h3>📊 Estadísticas</h3>
-                    <div class="stat-item">
-                        <span class="stat-label">Total de puntos:</span>
-                        <span class="stat-value" id="totalPuntos">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Categorías:</span>
-                        <span class="stat-value" id="totalCategorias">0</span>
-                    </div>
-                </div>
-
-                <!-- Controles -->
-                <div class="controls">
-                    <div class="control-group">
-                        <label for="categoriaFilter">Filtrar por categoría:</label>
-                        <select id="categoriaFilter">
-                            <option value="">Todas las categorías</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="buscarNombre">Buscar por nombre:</label>
-                        <input type="text" id="buscarNombre" placeholder="Escribe un nombre...">
-                    </div>
-
-                    <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">
-                        ➕ Agregar Nuevo Punto
-                    </button>
-
-                    <button class="btn btn-secondary" onclick="centrarMapa()">
-                        🎯 Centrar en España
-                    </button>
-                </div>
-
-                <!-- Mensajes -->
-                <div id="message" class="message"></div>
-
-                <!-- Lista de puntos -->
-                <div class="puntos-list" id="puntosList">
-                    <p style="text-align: center; color: #999;">Cargando puntos de interés...</p>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Mapa -->
-        <main class="map-container">
-            <div id="map"></div>
-
-            <!-- Loading spinner -->
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Cargando...</p>
-            </div>
-        </main>
-    </div>
-
-    <!-- Modal para nuevo punto -->
-    <div class="form-modal" id="formModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>➕ Nuevo Punto de Interés</h2>
-                <button class="close-btn" onclick="cerrarFormularioNuevoPunto()">&times;</button>
-            </div>
-
-            <form id="nuevoPuntoForm">
-                <div class="form-group">
-                    <label for="nombre">Nombre *</label>
-                    <input type="text" id="nombre" name="nombre" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="descripcion">Descripción</label>
-                    <textarea id="descripcion" name="descripcion"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="categoria">Categoría *</label>
-                                                            <select id="categoria" name="categoria" required>
-                        <option value="">Selecciona una categoría</option>
-                        <option value="Avion">✈️ Avion</option>
-                        <option value="Tanque">🛡️ Tanque</option>
-                        <option value="Drone">�� Drone</option>
-                        <option value="BSM">🏕️ BSM</option>
-                        <option value="Centro de Mando">🎯 Centro de Mando</option>
-                        <option value="Unidad">👥 Unidad</option>
-                        <option value="Sub-Grupo Tactico">⚔️ Sub-Grupo Tactico</option>
-                        <option value="Peloton">🎖️ Peloton</option>
-                        <option value="Vehiculo">🚗 Vehiculo</option>
-                        <option value="Artilleria">💣 Artilleria</option>
-                        <option value="Infanteria">🪖 Infanteria</option>
-                        <option value="Otro">📍 Otro</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="direccion">Dirección</label>
-                    <input type="text" id="direccion" name="direccion">
-                </div>
-
-                <div class="form-group">
-                    <label for="ciudad">Ciudad *</label>
-                    <input type="text" id="ciudad" name="ciudad" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="provincia">Provincia *</label>
-                    <input type="text" id="provincia" name="provincia" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="codigo_postal">Código Postal</label>
-                    <input type="text" id="codigo_postal" name="codigo_postal">
-                </div>
-
-                <div class="form-group">
-                    <label for="telefono">Teléfono</label>
-                    <input type="tel" id="telefono" name="telefono">
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email">
-                </div>
-
-                <div class="form-group">
-                    <label for="website">Sitio Web</label>
-                    <input type="url" id="website" name="website">
-                </div>
-
-                <div class="form-group">
-                    <label for="latitud">Latitud *</label>
-                    <input type="number" id="latitud" name="latitud" step="any" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="longitud">Longitud *</label>
-                    <input type="number" id="longitud" name="longitud" step="any" required>
-                </div>
-
-                <div style="display: flex; gap: 10px;">
-                    <button type="submit" class="btn btn-primary">Guardar</button>
-                    <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()">Cancelar</button>
-                </div>
-            </form>
+      <div class="sidebar-content">
+        <div class="stats">
+          <h3>📊 Estadísticas</h3>
+          <div class="stat-item">
+            <span class="stat-label">Total de puntos:</span>
+            <span class="stat-value" id="totalPuntos">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Categorías:</span>
+            <span class="stat-value" id="totalCategorias">0</span>
+          </div>
         </div>
+
+        <div class="controls">
+          <div class="control-group">
+            <label for="categoriaFilter">Filtrar por categoría:</label>
+            <select id="categoriaFilter">
+              <option value="">Todas las categorías</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="allianceFilter">Filtrar por alianza:</label>
+            <select id="allianceFilter">
+              <option value="">Todas</option>
+              <option value="friendly">Friendly</option>
+              <option value="hostile">Hostile</option>
+              <option value="neutral">Neutral</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="buscarNombre">Buscar por nombre:</label>
+            <input type="text" id="buscarNombre" placeholder="Escribe un nombre..."/>
+          </div>
+
+          <button class="btn btn-primary" onclick="mostrarFormularioNuevoPunto()">➕ Agregar Nuevo Punto</button>
+          <button class="btn btn-secondary" onclick="centrarMapa()">🎯 Centrar en España</button>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <div class="puntos-list" id="puntosList">
+          <p style="text-align:center;color:#999;">Cargando puntos de interés...</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Map -->
+    <main class="map-container">
+      <div id="map"></div>
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Cargando...</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="form-modal" id="formModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>➕ Nuevo Punto de Interés</h2>
+        <button class="close-btn" onclick="cerrarFormularioNuevoPunto()">&times;</button>
+      </div>
+
+      <form id="nuevoPuntoForm">
+        <div class="form-group">
+          <label for="nombre">Nombre *</label>
+          <input type="text" id="nombre" name="nombre" required />
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" name="descripcion"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="categoria">Categoría *</label>
+          <select id="categoria" name="categoria" required>
+            <option value="">Selecciona una categoría</option>
+            <option value="missile">missile</option>
+            <option value="fighter">fighter</option>
+            <option value="bomber">bomber</option>
+            <option value="aircraft">aircraft</option>
+            <option value="helicopter">helicopter</option>
+            <option value="uav">uav</option>
+            <option value="tank">tank</option>
+            <option value="artillery">artillery</option>
+            <option value="ship">ship</option>
+            <option value="destroyer">destroyer</option>
+            <option value="submarine">submarine</option>
+            <option value="ground_vehicle">ground_vehicle</option>
+            <option value="apc">apc</option>
+            <option value="infantry">infantry</option>
+            <option value="person">person</option>
+            <option value="base">base</option>
+            <option value="building">building</option>
+            <option value="infrastructure">infrastructure</option>
+            <option value="default">default</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="country">Country (owner)</label>
+          <input type="text" id="country" name="country" placeholder="Spain, France, Italy..."/>
+        </div>
+
+        <div class="form-group">
+          <label for="alliance">Alliance *</label>
+          <select id="alliance" name="alliance" required>
+            <option value="friendly">friendly</option>
+            <option value="hostile">hostile</option>
+            <option value="neutral">neutral</option>
+            <option value="unknown" selected>unknown</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="direccion">Dirección</label>
+          <input type="text" id="direccion" name="direccion" />
+        </div>
+
+        <div class="form-group">
+          <label for="ciudad">Ciudad</label>
+          <input type="text" id="ciudad" name="ciudad" />
+        </div>
+
+        <div class="form-group">
+          <label for="provincia">Provincia</label>
+          <input type="text" id="provincia" name="provincia" />
+        </div>
+
+        <div class="form-group">
+          <label for="codigo_postal">Código Postal</label>
+          <input type="text" id="codigo_postal" name="codigo_postal" />
+        </div>
+
+        <div class="form-group">
+          <label for="telefono">Teléfono</label>
+          <input type="tel" id="telefono" name="telefono" />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" />
+        </div>
+
+        <div class="form-group">
+          <label for="website">Sitio Web</label>
+          <input type="url" id="website" name="website" />
+        </div>
+
+        <div class="form-group">
+          <label for="latitud">Latitud *</label>
+          <input type="number" id="latitud" name="latitud" step="any" required />
+        </div>
+
+        <div class="form-group">
+          <label for="longitud">Longitud *</label>
+          <input type="number" id="longitud" name="longitud" step="any" required />
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarFormularioNuevoPunto()">Cancelar</button>
+        </div>
+      </form>
     </div>
+  </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Custom JS -->
-    <script src="/js/app.js"></script>
+  <!-- App -->
+  <script src="/js/app.js"></script>
 </body>
 </html>

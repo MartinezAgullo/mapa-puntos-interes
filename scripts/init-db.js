@@ -1,262 +1,97 @@
+// scripts/init-db.js
 const pool = require('../config/database');
 
 const initDatabase = async () => {
+  try {
+    console.log('🔄 Initializing database from scratch…');
+
+    // 0) Enable PostGIS
+    await pool.query(`CREATE EXTENSION IF NOT EXISTS postgis;`);
+    console.log('✅ PostGIS enabled');
+
+    // 1) Clean old objects (table + enum) if you are okay starting fresh
+    await pool.query(`DROP TABLE IF EXISTS puntos_interes CASCADE;`);
     try {
-        console.log('🔄 Inicializando base de datos...');
+      await pool.query(`DROP TYPE IF EXISTS categoria_militar;`);
+    } catch (_) {}
+    try {
+      await pool.query(`DROP TYPE IF EXISTS alliance_enum;`);
+    } catch (_) {}
 
-        // Habilitar extensión PostGIS
-        await pool.query(`CREATE EXTENSION IF NOT EXISTS postgis;`);
-        console.log('✅ Extensión PostGIS habilitada');
+    // 2) Create enums
+    await pool.query(`
+      CREATE TYPE categoria_militar AS ENUM (
+        'missile','fighter','bomber','aircraft','helicopter','uav',
+        'tank','artillery','ship','destroyer','submarine','ground_vehicle',
+        'apc','infantry','person','base','building','infrastructure','default'
+      );
+    `);
 
-        // Crear tipo ENUM para categorías militares
-        await pool.query(`
-            DO $$ BEGIN
-                CREATE TYPE categoria_militar AS ENUM (
-                    'Avion',
-                    'Tanque',
-                    'Drone',
-                    'BSM',
-                    'Centro de Mando',
-                    'Unidad',
-                    'Sub-Grupo Tactico',
-                    'Peloton',
-                    'Vehiculo',
-                    'Artilleria',
-                    'Infanteria',
-                    'Otro'
-                );
-            EXCEPTION
-                WHEN duplicate_object THEN null;
-            END $$;
-        `);
-        console.log('✅ Tipo ENUM categoria_militar creado');
+    await pool.query(`
+      CREATE TYPE alliance_enum AS ENUM ('friendly','hostile','neutral','unknown');
+    `);
 
-        // Crear tabla de puntos de interés
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS puntos_interes (
-                id SERIAL PRIMARY KEY,
-                nombre VARCHAR(255) NOT NULL,
-                descripcion TEXT,
-                categoria categoria_militar NOT NULL,
-                direccion VARCHAR(255),
-                ciudad VARCHAR(100),
-                provincia VARCHAR(100),
-                codigo_postal VARCHAR(10),
-                telefono VARCHAR(20),
-                email VARCHAR(100),
-                website VARCHAR(255),
-                elemento_identificado VARCHAR(100),
-                activo BOOLEAN DEFAULT true,
-                tipo_elemento VARCHAR(100),
-                prioridad INTEGER DEFAULT 0,
-                observaciones TEXT,
-                altitud NUMERIC(10, 2),
-                geom GEOMETRY(Point, 4326) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        console.log('✅ Tabla puntos_interes creada');
+    // 3) Create table
+    await pool.query(`
+      CREATE TABLE puntos_interes (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(255) NOT NULL,
+        descripcion TEXT,
+        categoria categoria_militar NOT NULL,
+        country VARCHAR(100),
+        alliance alliance_enum NOT NULL DEFAULT 'unknown',
+        direccion VARCHAR(255),
+        ciudad VARCHAR(100),
+        provincia VARCHAR(100),
+        codigo_postal VARCHAR(10),
+        telefono VARCHAR(20),
+        email VARCHAR(100),
+        website VARCHAR(255),
+        elemento_identificado VARCHAR(100),
+        activo BOOLEAN DEFAULT true,
+        tipo_elemento VARCHAR(100),
+        prioridad INTEGER DEFAULT 0,
+        observaciones TEXT,
+        altitud NUMERIC(10, 2),
+        geom GEOMETRY(Point, 4326) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Table puntos_interes created');
 
-        // Crear índice espacial
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_puntos_interes_geom
-            ON puntos_interes USING GIST (geom);
-        `);
-        console.log('✅ Índice espacial creado');
+    // 4) Indexes
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_geom ON puntos_interes USING GIST (geom);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_activo ON puntos_interes (activo);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_elemento ON puntos_interes (elemento_identificado);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_categoria ON puntos_interes (categoria);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_alliance ON puntos_interes (alliance);`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_country ON puntos_interes (country);`);
+    console.log('✅ Indexes created');
 
-        // Crear índices adicionales
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_puntos_interes_activo
-            ON puntos_interes (activo);
-        `);
-        await pool.query(`
-            CREATE INDEX IF NOT EXISTS idx_puntos_interes_elemento
-            ON puntos_interes (elemento_identificado);
-        `);
-        console.log('✅ Índices adicionales creados');
+    // 5) Seed examples (using your new categories)
+    await pool.query(`
+      INSERT INTO puntos_interes
+        (nombre, descripcion, categoria, country, alliance, ciudad, provincia, elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud, geom)
+      VALUES
+        ('F-16 Patrol', 'CAP patrol', 'fighter', 'Spain', 'friendly', 'Granada', 'Granada', 'AIR-F16-001', true, 'Caza', 8, 'On CAP', 1000, ST_SetSRID(ST_MakePoint(-3.5986, 37.1773), 4326)),
+        ('Recon UAV-12', 'Recon pattern', 'uav', 'Spain', 'friendly', 'Toledo', 'Toledo', 'UAV-012', true, 'Recon', 6, 'Loitering', 300, ST_SetSRID(ST_MakePoint(-4.0273, 39.8628), 4326)),
+        ('MBT T-90', 'Heavy armor', 'tank', 'Unknown', 'hostile', 'Málaga', 'Málaga', 'TANK-002', true, 'MBT', 9, 'Defensive posture', NULL, ST_SetSRID(ST_MakePoint(-4.4214, 36.7213), 4326)),
+        ('FA Battery', 'Field artillery battery', 'artillery', 'Spain', 'friendly', 'Badajoz', 'Badajoz', 'ARTY-01', true, '155mm', 7, NULL, NULL, ST_SetSRID(ST_MakePoint(-6.9706, 38.8794), 4326)),
+        ('DDG-75', 'Aegis destroyer', 'destroyer', 'Spain', 'friendly', 'Rota', 'Cádiz', 'DDG-75', true, 'Surface combatant', 10, NULL, NULL, ST_SetSRID(ST_MakePoint(-6.3496, 36.6237), 4326)),
+        ('Sub Kilo', 'Diesel-electric submarine', 'submarine', 'Unknown', 'hostile', 'Cartagena', 'Murcia', 'SUB-001', true, 'SSK', 10, 'Suspected patrol', NULL, ST_SetSRID(ST_MakePoint(-0.9817, 37.6257), 4326)),
+        ('Inf Plt A3', 'Infantry platoon', 'infantry', 'Spain', 'friendly', 'Sevilla', 'Sevilla', 'INF-A3', true, 'Platoon', 5, '30 pax', NULL, ST_SetSRID(ST_MakePoint(-5.9845, 37.3891), 4326)),
+        ('Fuel Depot', 'Critical infrastructure', 'infrastructure', 'Spain', 'neutral', 'Valencia', 'Valencia', 'INFRA-01', true, 'Fuel', 6, NULL, NULL, ST_SetSRID(ST_MakePoint(-0.3763, 39.4699), 4326)),
+        ('Main Air Base', 'Air base', 'base', 'Spain', 'friendly', 'Zaragoza', 'Zaragoza', 'BASE-ZAZ', true, 'AB', 9, '24/7 ops', NULL, ST_SetSRID(ST_MakePoint(-0.8891, 41.6488), 4326)),
+        ('Unidentified', 'Unknown contact', 'default', 'Unknown', 'unknown', 'Madrid', 'Madrid', 'UNK-000', false, 'Unknown', 0, NULL, NULL, ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326));
+    `);
 
-        // Insertar datos de ejemplo militares
-        await pool.query(`
-            INSERT INTO puntos_interes (
-                nombre,
-                descripcion,
-                categoria,
-                ciudad,
-                provincia,
-                elemento_identificado,
-                activo,
-                tipo_elemento,
-                prioridad,
-                observaciones,
-                altitud,
-                geom
-            )
-            VALUES
-                (
-                    'Tanque T-72 Alpha',
-                    'Tanque enemigo identificado en zona norte',
-                    'Tanque',
-                    'Madrid',
-                    'Madrid',
-                    'TANK-001',
-                    true,
-                    'Blindado Pesado',
-                    9,
-                    'Movimiento detectado hacia el este',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)
-                ),
-                (
-                    'Drone Recon-05',
-                    'UAV de reconocimiento en patrulla',
-                    'Drone',
-                    'Barcelona',
-                    'Barcelona',
-                    'DRONE-005',
-                    true,
-                    'UAV Reconocimiento',
-                    7,
-                    'Volando a 500m de altitud',
-                    500, 
-                    ST_SetSRID(ST_MakePoint(2.1686, 41.3874), 4326)
-                ),
-                (
-                    'Centro de Mando Delta',
-                    'Centro de operaciones principal',
-                    'Centro de Mando',
-                    'Valencia',
-                    'Valencia',
-                    'CMD-001',
-                    true,
-                    'Comando y Control',
-                    10,
-                    'Operativo 24/7',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-0.3763, 39.4699), 4326)
-                ),
-                (
-                    'Peloton Alfa-3',
-                    'Peloton de infantería en posición',
-                    'Peloton',
-                    'Sevilla',
-                    'Sevilla',
-                    'PLT-A3',
-                    true,
-                    'Infantería',
-                    6,
-                    '30 efectivos',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-5.9845, 37.3891), 4326)
-                ),
-                (
-                    'Unidad Bravo-1',
-                    'Unidad táctica desplegada',
-                    'Unidad',
-                    'Zaragoza',
-                    'Zaragoza',
-                    'UNIT-B1',
-                    true,
-                    'Unidad Táctica',
-                    7,
-                    'Desplegada en zona urbana',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-0.8891, 41.6488), 4326)
-                ),
-                (
-                    'Sub-Grupo Tactico Charlie',
-                    'Sub-grupo en maniobras',
-                    'Sub-Grupo Tactico',
-                    'Bilbao',
-                    'Vizcaya',
-                    'SGT-C1',
-                    true,
-                    'Grupo Táctico',
-                    8,
-                    'En coordinación con Unidad Bravo-1',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-2.9253, 43.2627), 4326)
-                ),
-                (
-                    'BSM-Norte-01',
-                    'Base de Soporte Móvil operativa',
-                    'BSM',
-                    'A Coruña',
-                    'A Coruña',
-                    'BSM-N01',
-                    true,
-                    'Logística',
-                    8,
-                    'Capacidad 200 efectivos',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-8.4115, 43.3623), 4326)
-                ),
-                (
-                    'Avion Caza F-16',
-                    'Aeronave de combate en patrulla aérea',
-                    'Avion',
-                    'Granada',
-                    'Granada',
-                    'AIR-F16-001',
-                    true,
-                    'Caza Multifunción',
-                    9,
-                    'Patrulla CAP activa',
-                    1000,
-                    ST_SetSRID(ST_MakePoint(-3.5986, 37.1773), 4326)
-                ),
-                (
-                    'Tanque T-90 Bravo',
-                    'Tanque pesado en zona sur',
-                    'Tanque',
-                    'Málaga',
-                    'Málaga',
-                    'TANK-002',
-                    true,
-                    'Blindado Pesado',
-                    8,
-                    'En posición defensiva',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-4.4214, 36.7213), 4326)
-                ),
-                (
-                    'Drone Scout-12',
-                    'Drone de exploración',
-                    'Drone',
-                    'Toledo',
-                    'Toledo',
-                    'DRONE-012',
-                    true,
-                    'UAV Exploración',
-                    5,
-                    'Área de reconocimiento ampliada',
-                    40,
-                    ST_SetSRID(ST_MakePoint(-4.0273, 39.8628), 4326)
-                ),
-                (
-                    'Elemento Inactivo Test',
-                    'Elemento desactivado para pruebas',
-                    'Otro',
-                    'Madrid',
-                    'Madrid',
-                    'TEST-999',
-                    false,
-                    'Prueba',
-                    0,
-                    'Elemento de prueba - desactivado',
-                    NULL,
-                    ST_SetSRID(ST_MakePoint(-3.7100, 40.4200), 4326)
-                )
-            ON CONFLICT DO NOTHING;
-        `);
-        console.log('✅ Datos de ejemplo militares insertados');
-
-        console.log('\n🎉 Base de datos inicializada correctamente');
-        process.exit(0);
-    } catch (error) {
-        console.error('❌ Error al inicializar la base de datos:', error);
-        process.exit(1);
-    }
+    console.log('🎉 Database initialized with new schema + sample data');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ DB init error:', error);
+    process.exit(1);
+  }
 };
 
 initDatabase();

@@ -1,20 +1,17 @@
 // public/js/app.js
 
-// App state
 let map;
 let markers = [];
 let allPuntos = [];
 let filteredPuntos = [];
 let selectedPuntoId = null;
 
-// Categories (same list you requested)
 const ALL_CATEGORIES = [
   'missile','fighter','bomber','aircraft','helicopter','uav',
   'tank','artillery','ship','destroyer','submarine','ground_vehicle',
   'apc','infantry','person','base','building','infrastructure','default'
 ];
 
-// Alliance → color frame (used for fallback styles or badges)
 const ALLIANCE_COLORS = {
   friendly: '#00AEEF',
   hostile: '#FF0000',
@@ -22,25 +19,21 @@ const ALLIANCE_COLORS = {
   unknown: '#A9A9A9'
 };
 
-// Icon resolver: expects SVGs at /public/icons/{alliance}/{category}.svg
 function iconUrl(category, alliance) {
   const a = (alliance || 'unknown').toLowerCase();
   const c = (category || 'default').toLowerCase();
   return `/icons/${a}/${c}.svg`;
 }
 
-// Leaflet icon builder with fallback size/anchor
 function makeIcon(category, alliance) {
   return L.icon({
     iconUrl: iconUrl(category, alliance),
     iconSize: [36, 36],
     iconAnchor: [18, 36],
     popupAnchor: [0, -28],
-    // Optional: provide a shadow if you add /icons/shadow.png later
   });
 }
 
-// Init
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   loadPuntos();
@@ -53,7 +46,6 @@ function initMap() {
     attribution: '© OpenStreetMap contributors', maxZoom: 19
   }).addTo(map);
 
-  // Autofill lat/lng in the modal on click
   map.on('click', (e) => {
     if (document.getElementById('formModal').classList.contains('show')) {
       document.getElementById('latitud').value = e.latlng.lat.toFixed(6);
@@ -121,14 +113,13 @@ function renderPuntos() {
     return;
   }
 
-  container.innerHTML = filteredPuntos.map(punto => `
-    <div class="punto-item ${selectedPuntoId === punto.id ? 'active' : ''}" onclick="selectPunto(${punto.id})">
+  container.innerHTML = filteredPuntos.map(p => `
+    <div class="punto-item ${selectedPuntoId === p.id ? 'active' : ''}" onclick="selectPunto(${p.id})">
       <div class="punto-nombre">
-        <span class="pill" style="background:${ALLIANCE_COLORS[punto.alliance||'unknown']||'#A9A9A9'}"></span>
-        ${punto.nombre}
+        <span class="pill" style="background:${ALLIANCE_COLORS[p.alliance||'unknown']||'#A9A9A9'}"></span>
+        ${p.nombre}
       </div>
-      <span class="punto-categoria">${punto.categoria} • ${punto.alliance||'unknown'}</span>
-      <div class="punto-ciudad">📍 ${punto.ciudad ?? ''} ${punto.provincia ? ', '+punto.provincia : ''}</div>
+      <span class="punto-categoria">${p.categoria} • ${p.alliance||'unknown'}${p.country ? ' • '+p.country : ''}</span>
     </div>
   `).join('');
 }
@@ -137,13 +128,13 @@ function addMarkersToMap() {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  filteredPuntos.forEach(punto => {
-    const icon = makeIcon(punto.categoria, punto.alliance);
-    const marker = L.marker([punto.latitud, punto.longitud], { icon })
+  filteredPuntos.forEach(p => {
+    const icon = makeIcon(p.categoria, p.alliance);
+    const marker = L.marker([p.latitud, p.longitud], { icon })
       .addTo(map)
-      .bindPopup(createPopupContent(punto), { className: 'custom-popup' });
+      .bindPopup(createPopupContent(p), { className: 'custom-popup' });
 
-    marker.on('click', () => selectPunto(punto.id));
+    marker.on('click', () => selectPunto(p.id));
     markers.push(marker);
   });
 
@@ -164,12 +155,6 @@ function createPopupContent(p) {
       <span class="popup-categoria">${p.categoria} • ${p.alliance || 'unknown'}${p.country ? ' • '+p.country : ''}</span>
       <div class="popup-info">
         ${p.descripcion ? `<p>${p.descripcion}</p>` : ''}
-        ${p.direccion ? `<p><strong>📍</strong> ${p.direccion}</p>` : ''}
-        ${(p.ciudad || p.provincia) ? `<p><strong>🏙️</strong> ${p.ciudad ?? ''}${p.provincia ? ', '+p.provincia : ''}</p>` : ''}
-        ${p.codigo_postal ? `<p><strong>📮</strong> ${p.codigo_postal}</p>` : ''}
-        ${p.telefono ? `<p><strong>📞</strong> ${p.telefono}</p>` : ''}
-        ${p.email ? `<p><strong>✉️</strong> ${p.email}</p>` : ''}
-        ${p.website ? `<p><strong>🌐</strong> <a href="${p.website}" target="_blank">Sitio web</a></p>` : ''}
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;">
         <button class="btn btn-danger" onclick="deletePunto(${p.id})">🗑️ Eliminar</button>
@@ -191,9 +176,6 @@ function selectPunto(id) {
     return Math.abs(ll.lat - p.latitud) < 1e-9 && Math.abs(ll.lng - p.longitud) < 1e-9;
   });
   if (marker) marker.openPopup();
-
-  const el = document.querySelector('.punto-item.active');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function updateStats() {
@@ -240,13 +222,6 @@ async function crearNuevoPunto() {
       categoria: document.getElementById('categoria').value,
       country: document.getElementById('country').value,
       alliance: document.getElementById('alliance').value,
-      direccion: document.getElementById('direccion').value,
-      ciudad: document.getElementById('ciudad').value,
-      provincia: document.getElementById('provincia').value,
-      codigo_postal: document.getElementById('codigo_postal').value,
-      telefono: document.getElementById('telefono').value,
-      email: document.getElementById('email').value,
-      website: document.getElementById('website').value,
       latitud: parseFloat(document.getElementById('latitud').value),
       longitud: parseFloat(document.getElementById('longitud').value)
     };
@@ -295,7 +270,6 @@ async function deletePunto(id) {
   }
 }
 
-// UI helpers
 function showLoading(show) {
   const el = document.getElementById('loading');
   el.classList.toggle('show', !!show);

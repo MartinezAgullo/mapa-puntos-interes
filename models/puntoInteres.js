@@ -11,13 +11,6 @@ class PuntoInteres {
         categoria,
         country,
         alliance,
-        direccion,
-        ciudad,
-        provincia,
-        codigo_postal,
-        telefono,
-        email,
-        website,
         elemento_identificado,
         activo,
         tipo_elemento,
@@ -60,13 +53,6 @@ class PuntoInteres {
         categoria,
         country,
         alliance,
-        direccion,
-        ciudad,
-        provincia,
-        codigo_postal,
-        telefono,
-        email,
-        website,
         altitud,
         ST_X(geom) as longitud,
         ST_Y(geom) as latitud,
@@ -91,43 +77,33 @@ class PuntoInteres {
     const query = `
       INSERT INTO puntos_interes (
         nombre, descripcion, categoria, country, alliance,
-        direccion, ciudad, provincia, codigo_postal, telefono, email, website,
         elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud, geom
       )
       VALUES (
         $1, $2, $3::categoria_militar, $4, $5::alliance_enum,
-        $6, $7, $8, $9, $10, $11, $12,
-        $13, $14, $15, $16, $17, $18,
-        ST_SetSRID(ST_MakePoint($19, $20), 4326)
+        $6, $7, $8, $9, $10, $11,
+        ST_SetSRID(ST_MakePoint($12, $13), 4326)
       )
       RETURNING
         id, nombre, descripcion, categoria, country, alliance,
-        direccion, ciudad, provincia, codigo_postal, telefono, email, website,
         elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud,
         ST_X(geom) as longitud, ST_Y(geom) as latitud, created_at, updated_at;
     `;
 
     const values = [
-      data.nombre ?? null,                             // 1
-      data.descripcion ?? null,                        // 2
-      data.categoria ?? 'default',                     // 3
-      data.country ?? null,                            // 4
-      data.alliance ?? 'unknown',                      // 5
-      data.direccion ?? null,                          // 6
-      data.ciudad ?? null,                             // 7
-      data.provincia ?? null,                          // 8
-      data.codigo_postal ?? null,                      // 9
-      data.telefono ?? null,                           // 10
-      data.email ?? null,                              // 11
-      data.website ?? null,                            // 12
-      data.elemento_identificado ?? null,              // 13
-      data.activo !== undefined ? data.activo : true,  // 14
-      data.tipo_elemento ?? null,                      // 15
-      data.prioridad ?? 0,                             // 16
-      data.observaciones ?? null,                      // 17
-      data.altitud ?? null,                            // 18
-      data.longitud,                                   // 19
-      data.latitud                                     // 20
+      data.nombre ?? null,                 // 1
+      data.descripcion ?? null,            // 2
+      data.categoria ?? 'default',         // 3
+      data.country ?? null,                // 4
+      data.alliance ?? 'unknown',          // 5
+      data.elemento_identificado ?? null,  // 6
+      data.activo !== undefined ? data.activo : true, // 7
+      data.tipo_elemento ?? null,          // 8
+      data.prioridad ?? 0,                 // 9
+      data.observaciones ?? null,          //10
+      data.altitud ?? null,                //11
+      data.longitud,                       //12
+      data.latitud                         //13
     ];
 
     const result = await pool.query(query, values);
@@ -143,51 +119,39 @@ class PuntoInteres {
         categoria = COALESCE($3::categoria_militar, categoria),
         country = COALESCE($4, country),
         alliance = COALESCE($5::alliance_enum, alliance),
-        direccion = COALESCE($6, direccion),
-        ciudad = COALESCE($7, ciudad),
-        provincia = COALESCE($8, provincia),
-        codigo_postal = COALESCE($9, codigo_postal),
-        telefono = COALESCE($10, telefono),
-        email = COALESCE($11, email),
-        website = COALESCE($12, website),
-        elemento_identificado = COALESCE($13, elemento_identificado),
-        activo = COALESCE($14, activo),
-        tipo_elemento = COALESCE($15, tipo_elemento),
-        prioridad = COALESCE($16, prioridad),
-        observaciones = COALESCE($17, observaciones),
-        altitud = COALESCE($18, altitud),
-        geom = COALESCE(ST_SetSRID(ST_MakePoint(CAST($19 AS DOUBLE PRECISION), CAST($20 AS DOUBLE PRECISION)), 4326), geom),
+        elemento_identificado = COALESCE($6, elemento_identificado),
+        activo = COALESCE($7, activo),
+        tipo_elemento = COALESCE($8, tipo_elemento),
+        prioridad = COALESCE($9, prioridad),
+        observaciones = COALESCE($10, observaciones),
+        altitud = COALESCE($11, altitud),
+        geom = COALESCE(
+          ST_SetSRID(ST_MakePoint(CAST($12 AS DOUBLE PRECISION), CAST($13 AS DOUBLE PRECISION)), 4326),
+          geom
+        ),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $21
+      WHERE id = $14
       RETURNING
         id, nombre, descripcion, categoria, country, alliance,
-        direccion, ciudad, provincia, codigo_postal, telefono, email, website,
         elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud,
         ST_X(geom) as longitud, ST_Y(geom) as latitud, created_at, updated_at;
     `;
 
     const values = [
-      data.nombre ?? null,              // 1
-      data.descripcion ?? null,         // 2
-      data.categoria ?? null,           // 3
-      data.country ?? null,             // 4
-      data.alliance ?? null,            // 5
-      data.direccion ?? null,           // 6
-      data.ciudad ?? null,              // 7
-      data.provincia ?? null,           // 8
-      data.codigo_postal ?? null,       // 9
-      data.telefono ?? null,            // 10
-      data.email ?? null,               // 11
-      data.website ?? null,             // 12
-      data.elemento_identificado ?? null, // 13
-      data.activo ?? null,              // 14
-      data.tipo_elemento ?? null,       // 15
-      data.prioridad ?? null,           // 16
-      data.observaciones ?? null,       // 17
-      data.altitud ?? null,             // 18
-      data.longitud ?? null,            // 19
-      data.latitud ?? null,             // 20
-      id                                // 21
+      data.nombre ?? null,                 // 1
+      data.descripcion ?? null,            // 2
+      data.categoria ?? null,              // 3
+      data.country ?? null,                // 4
+      data.alliance ?? null,               // 5
+      data.elemento_identificado ?? null,  // 6
+      data.activo ?? null,                 // 7
+      data.tipo_elemento ?? null,          // 8
+      data.prioridad ?? null,              // 9
+      data.observaciones ?? null,          //10
+      data.altitud ?? null,                //11
+      data.longitud ?? null,               //12
+      data.latitud ?? null,                //13
+      id                                   //14
     ];
 
     const result = await pool.query(query, values);
@@ -200,9 +164,7 @@ class PuntoInteres {
   }
 
   static async getCategorias() {
-    const result = await pool.query(`
-      SELECT unnest(enum_range(NULL::categoria_militar)) AS categoria
-    `);
+    const result = await pool.query(`SELECT unnest(enum_range(NULL::categoria_militar)) AS categoria;`);
     return result.rows.map(r => r.categoria);
   }
 }

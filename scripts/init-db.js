@@ -9,16 +9,12 @@ const initDatabase = async () => {
     await pool.query(`CREATE EXTENSION IF NOT EXISTS postgis;`);
     console.log('✅ PostGIS enabled');
 
-    // 1) Clean old objects (table + enum) if you are okay starting fresh
+    // 1) Clean old objects
     await pool.query(`DROP TABLE IF EXISTS puntos_interes CASCADE;`);
-    try {
-      await pool.query(`DROP TYPE IF EXISTS categoria_militar;`);
-    } catch (_) {}
-    try {
-      await pool.query(`DROP TYPE IF EXISTS alliance_enum;`);
-    } catch (_) {}
+    try { await pool.query(`DROP TYPE IF EXISTS categoria_militar;`); } catch (_) {}
+    try { await pool.query(`DROP TYPE IF EXISTS alliance_enum;`); } catch (_) {}
 
-    // 2) Create enums
+    // 2) Enums
     await pool.query(`
       CREATE TYPE categoria_militar AS ENUM (
         'missile','fighter','bomber','aircraft','helicopter','uav',
@@ -31,7 +27,7 @@ const initDatabase = async () => {
       CREATE TYPE alliance_enum AS ENUM ('friendly','hostile','neutral','unknown');
     `);
 
-    // 3) Create table
+    // 3) Table (trimmed fields)
     await pool.query(`
       CREATE TABLE puntos_interes (
         id SERIAL PRIMARY KEY,
@@ -40,13 +36,6 @@ const initDatabase = async () => {
         categoria categoria_militar NOT NULL,
         country VARCHAR(100),
         alliance alliance_enum NOT NULL DEFAULT 'unknown',
-        direccion VARCHAR(255),
-        ciudad VARCHAR(100),
-        provincia VARCHAR(100),
-        codigo_postal VARCHAR(10),
-        telefono VARCHAR(20),
-        email VARCHAR(100),
-        website VARCHAR(255),
         elemento_identificado VARCHAR(100),
         activo BOOLEAN DEFAULT true,
         tipo_elemento VARCHAR(100),
@@ -69,24 +58,79 @@ const initDatabase = async () => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_puntos_interes_country ON puntos_interes (country);`);
     console.log('✅ Indexes created');
 
-    // 5) Seed examples (using your new categories)
+    // 5) Seed (no address/telecom/web fields)
     await pool.query(`
-      INSERT INTO puntos_interes
-        (nombre, descripcion, categoria, country, alliance, ciudad, provincia, elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud, geom)
-      VALUES
-        ('F-16 Patrol', 'CAP patrol', 'fighter', 'Spain', 'friendly', 'Granada', 'Granada', 'AIR-F16-001', true, 'Caza', 8, 'On CAP', 1000, ST_SetSRID(ST_MakePoint(-3.5986, 37.1773), 4326)),
-        ('Recon UAV-12', 'Recon pattern', 'uav', 'Spain', 'friendly', 'Toledo', 'Toledo', 'UAV-012', true, 'Recon', 6, 'Loitering', 300, ST_SetSRID(ST_MakePoint(-4.0273, 39.8628), 4326)),
-        ('MBT T-90', 'Heavy armor', 'tank', 'Unknown', 'hostile', 'Málaga', 'Málaga', 'TANK-002', true, 'MBT', 9, 'Defensive posture', NULL, ST_SetSRID(ST_MakePoint(-4.4214, 36.7213), 4326)),
-        ('FA Battery', 'Field artillery battery', 'artillery', 'Spain', 'friendly', 'Badajoz', 'Badajoz', 'ARTY-01', true, '155mm', 7, NULL, NULL, ST_SetSRID(ST_MakePoint(-6.9706, 38.8794), 4326)),
-        ('DDG-75', 'Aegis destroyer', 'destroyer', 'Spain', 'friendly', 'Rota', 'Cádiz', 'DDG-75', true, 'Surface combatant', 10, NULL, NULL, ST_SetSRID(ST_MakePoint(-6.3496, 36.6237), 4326)),
-        ('Sub Kilo', 'Diesel-electric submarine', 'submarine', 'Unknown', 'hostile', 'Cartagena', 'Murcia', 'SUB-001', true, 'SSK', 10, 'Suspected patrol', NULL, ST_SetSRID(ST_MakePoint(-0.9817, 37.6257), 4326)),
-        ('Inf Plt A3', 'Infantry platoon', 'infantry', 'Spain', 'friendly', 'Sevilla', 'Sevilla', 'INF-A3', true, 'Platoon', 5, '30 pax', NULL, ST_SetSRID(ST_MakePoint(-5.9845, 37.3891), 4326)),
-        ('Fuel Depot', 'Critical infrastructure', 'infrastructure', 'Spain', 'neutral', 'Valencia', 'Valencia', 'INFRA-01', true, 'Fuel', 6, NULL, NULL, ST_SetSRID(ST_MakePoint(-0.3763, 39.4699), 4326)),
-        ('Main Air Base', 'Air base', 'base', 'Spain', 'friendly', 'Zaragoza', 'Zaragoza', 'BASE-ZAZ', true, 'AB', 9, '24/7 ops', NULL, ST_SetSRID(ST_MakePoint(-0.8891, 41.6488), 4326)),
-        ('Unidentified', 'Unknown contact', 'default', 'Unknown', 'unknown', 'Madrid', 'Madrid', 'UNK-000', false, 'Unknown', 0, NULL, NULL, ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326));
-    `);
+    INSERT INTO puntos_interes
+      (nombre, descripcion, categoria, country, alliance, elemento_identificado, activo, tipo_elemento, prioridad, observaciones, altitud, geom)
+    VALUES
+      -- =========================
+      -- FRIENDLY INFANTRY (SPAIN) - 3x en Valencia ciudad
+      -- =========================
+      ('ESP INF-A', 'Infantry squad (urban)', 'infantry', 'Spain', 'friendly', 'ESP-INF-A', true, 'Infantry', 5, 'Urban patrol', NULL, ST_SetSRID(ST_MakePoint(-0.3768, 39.4745), 4326)),
+      ('ESP INF-B', 'Infantry squad (urban)', 'infantry', 'Spain', 'friendly', 'ESP-INF-B', true, 'Infantry', 5, 'Holding intersection', NULL, ST_SetSRID(ST_MakePoint(-0.3850, 39.4632), 4326)),
+      ('ESP INF-C', 'Infantry squad (urban)', 'infantry', 'Spain', 'friendly', 'ESP-INF-C', true, 'Infantry', 5, 'Near park area', NULL, ST_SetSRID(ST_MakePoint(-0.3650, 39.4841), 4326)),
+  
+      -- =========================
+      -- FRIENDLY INFANTRY (FRANCE) - 2x en Valencia ciudad
+      -- =========================
+      ('FRA INF-1', 'Infantry squad (urban)', 'infantry', 'France', 'friendly', 'FRA-INF-1', true, 'Infantry', 5, 'Supporting ESP', NULL, ST_SetSRID(ST_MakePoint(-0.3530, 39.4525), 4326)),
+      ('FRA INF-2', 'Infantry squad (urban)', 'infantry', 'France', 'friendly', 'FRA-INF-2', true, 'Infantry', 5, 'Roadblock', NULL, ST_SetSRID(ST_MakePoint(-0.3405, 39.4598), 4326)),
+  
+      -- =========================
+      -- FRIENDLY INFANTRY (GERMANY) - 1x en Valencia ciudad
+      -- =========================
+      ('DEU INF-1', 'Infantry squad (urban)', 'infantry', 'Germany', 'friendly', 'DEU-INF-1', true, 'Infantry', 5, 'QR force', NULL, ST_SetSRID(ST_MakePoint(-0.4002, 39.4820), 4326)),
+  
+      -- =========================
+      -- FRIENDLY INFANTRY (PORTUGAL) - 1x en Valencia ciudad
+      -- =========================
+      ('PRT INF-1', 'Infantry squad (urban)', 'infantry', 'Portugal', 'friendly', 'PRT-INF-1', true, 'Infantry', 5, 'Rear security', NULL, ST_SetSRID(ST_MakePoint(-0.3925, 39.4682), 4326)),
+  
+      -- =========================
+      -- HOSTILE INFANTRY (UNKNOWN) - 7x en Valencia ciudad
+      -- =========================
+      ('H-INF-1', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-1', true, 'Infantry', 6, 'Skirmishing', NULL, ST_SetSRID(ST_MakePoint(-0.3609, 39.4705), 4326)),
+      ('H-INF-2', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-2', true, 'Infantry', 6, 'Advancing', NULL, ST_SetSRID(ST_MakePoint(-0.3452, 39.4769), 4326)),
+      ('H-INF-3', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-3', true, 'Infantry', 6, 'Occupying block', NULL, ST_SetSRID(ST_MakePoint(-0.3513, 39.4881), 4326)),
+      ('H-INF-4', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-4', true, 'Infantry', 6, 'Ambush expected', NULL, ST_SetSRID(ST_MakePoint(-0.3687, 39.4611), 4326)),
+      ('H-INF-5', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-5', true, 'Infantry', 6, 'Sniper activity', NULL, ST_SetSRID(ST_MakePoint(-0.3811, 39.4552), 4326)),
+      ('H-INF-6', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-6', true, 'Infantry', 6, 'Harassing fire', NULL, ST_SetSRID(ST_MakePoint(-0.3440, 39.4479), 4326)),
+      ('H-INF-7', 'Hostile infantry', 'infantry', 'Unknown', 'hostile', 'H-INF-7', true, 'Infantry', 6, 'Fragmented contact', NULL, ST_SetSRID(ST_MakePoint(-0.3895, 39.4786), 4326)),
+  
+      -- =========================
+      -- HOSTILE TANKS (UNKNOWN) - 3x en Valencia ciudad (periferia)
+      -- =========================
+      ('H-TANK-1', 'Hostile MBT', 'tank', 'Unknown', 'hostile', 'H-TNK-1', true, 'MBT', 9, 'Covered position', NULL, ST_SetSRID(ST_MakePoint(-0.3700, 39.4930), 4326)),
+      ('H-TANK-2', 'Hostile MBT', 'tank', 'Unknown', 'hostile', 'H-TNK-2', true, 'MBT', 9, 'Hull-down', NULL, ST_SetSRID(ST_MakePoint(-0.4040, 39.4665), 4326)),
+      ('H-TANK-3', 'Hostile MBT', 'tank', 'Unknown', 'hostile', 'H-TNK-3', true, 'MBT', 9, 'Overwatch', NULL, ST_SetSRID(ST_MakePoint(-0.3960, 39.4505), 4326)),
+  
+      -- =========================
+      -- NAVAL (COSTA DE VALENCIA)
+      -- =========================
+      ('ESP SHIP-1', 'Spanish surface combatant', 'ship', 'Spain', 'friendly', 'ESP-SHIP-1', true, 'Frigate', 8, 'Patrolling Valencia coast', NULL, ST_SetSRID(ST_MakePoint(-0.2700, 39.4500), 4326)),
+      ('ESP SUB-1', 'Spanish SSK', 'submarine', 'Spain', 'friendly', 'ESP-SUB-1', true, 'SSK', 10, 'Submerged patrol', NULL, ST_SetSRID(ST_MakePoint(-0.2200, 39.4000), 4326)),
+      ('H-SHIP-1', 'Unknown surface contact', 'ship', 'Unknown', 'hostile', 'H-SHIP-1', true, 'Corvette', 9, 'Shadowing traffic', NULL, ST_SetSRID(ST_MakePoint(-0.2200, 39.5500), 4326)),
+  
+      -- =========================
+      -- EXTRAS (OPCIONALES PERO ÚTILES PARA EL ESCENARIO)
+      -- =========================
+      -- Base aérea (Manises)
+      ('Manises AB', 'Air base (ESP)', 'base', 'Spain', 'friendly', 'ESP-BASE-ZAZ', true, 'Air Base', 9, 'Logistics hub', NULL, ST_SetSRID(ST_MakePoint(-0.4760, 39.4910), 4326)),
+  
+      -- Superioridad aérea y reconocimiento
+      ('ESP CAP-1', 'Fighter CAP on station', 'fighter', 'Spain', 'friendly', 'ESP-CAP-1', true, 'CAP', 8, 'Angels 26', 8000, ST_SetSRID(ST_MakePoint(-0.3000, 39.5200), 4326)),
+      ('FRA UAV-ISR', 'High-altitude ISR UAV', 'uav', 'France', 'friendly', 'FRA-UAV-1', true, 'ISR', 6, 'Wide-area scan', 1200, ST_SetSRID(ST_MakePoint(-0.3300, 39.4700), 4326)),
+  
+      -- Hostile fuego de apoyo (al norte, eje Sagunto)
+      ('H-ARTY-1', 'Hostile artillery battery', 'artillery', 'Unknown', 'hostile', 'H-ARTY-1', true, '155mm', 8, 'Counter-battery risk', NULL, ST_SetSRID(ST_MakePoint(-0.2700, 39.6800), 4326)),
+  
+      -- Helicóptero aliado en retaguardia
+      ('DEU HEL-1', 'Utility helicopter', 'helicopter', 'Germany', 'friendly', 'DEU-HEL-1', true, 'Utility', 5, 'MEDEVAC on call', 500, ST_SetSRID(ST_MakePoint(-0.3600, 39.4900), 4326))
+    ;
+  `);
+  
 
-    console.log('🎉 Database initialized with new schema + sample data');
+    console.log('🎉 Database initialized with trimmed schema + sample data');
     process.exit(0);
   } catch (error) {
     console.error('❌ DB init error:', error);

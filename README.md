@@ -1,240 +1,214 @@
-# 🗺️ Mapa de Puntos de Interés Militares
+# 🗺️ Military Points of Interest Map
 
-Aplicación web para gestionar y visualizar elementos militares usando Leaflet, Node.js, Express y PostGIS.
+A web application for managing and visualizing military entities on an interactive map using **Leaflet**, **Node.js**, **Express**, and **PostgreSQL/PostGIS**.
+The system supports NATO APP-6 compliant symbols, affiliation modeling, and multi-nation forces.
 
-## 🚀 Inicio Rápido
-<!-- ```bash
-# 1. Instalar dependencias
-npm install
+---
 
-# 2. Iniciar base de datos
-docker compose up -d
-sleep 15
+## 📑 Description
 
-# 3. Crear base de datos y tablas 
-docker exec -i puntos_interes_postgis psql -U postgres -c "CREATE DATABASE puntos_interes_db;"
-npm run init-db
+**mapa-puntos-interés** provides a lightweight military geospatial layer designed for integration with external systems such as **TIFDA**.
+It enables users to create, edit, visualize, delete, and classify military assets with accurate geospatial storage (PostGIS) and professional-grade symbology (NATO APP-6).
 
-# 4. Iniciar aplicación
-npm run dev
-```
+The project includes a full REST API and a minimal frontend map for situational awareness and operational testing.
 
-<!-- To initilaise the database I can also do
-node scripts/init-db.js --> -->
+---
 
-
-Mapa-Puntos-Interes PostgreSQL Setup Guide
-==========================================
-
-Quick setup guide to sync [TIFDA](https://github.com/MartinezAgullo/genai-tifda/tree/main) entities with the map visualization.
-
-* * * * *
-
-🚀 Quick Setup (First Time Only)
---------------------------------
-
-bash
+## 📁 Project Structure
 
 ```
+mapa-puntos-interes/
+├── config/              # Database configuration
+│   └── database.js
+├── delete-tifda-recipients.js
+├── docker-compose.yml
+├── models/              # Data models (PostGIS queries)
+│   └── puntoInteres.js
+├── postman/
+│   └── Puntos_Interes_API.postman_collection.json
+├── public/
+│   ├── css/
+│   │   └── styles.css
+│   ├── icons/           # NATO APP-6 icon set (organized by alliance)
+│   │   ├── friendly/
+│   │   ├── hostile/
+│   │   ├── neutral/
+│   │   └── unknown/
+│   ├── images/          # Screenshots
+│   ├── index.html
+│   └── js/
+│       └── app.js
+├── routes/
+│   └── puntosInteres.js
+├── scripts/             # Database initialization & migration scripts
+│   ├── init-db.js
+│   ├── migrate-categories.js
+│   └── update-schema.js
+├── server.js
+└── package.json
+```
+
+---
+
+## ⚡ Quick Setup
+
+### Prerequisites
+
+* Docker Desktop
+* Node.js 18+
+* npm
+
+### First-time Setup
+
+```bash
 # 1. Start Docker Desktop
 open -a Docker
-# Wait ~30 seconds for Docker to start
 
-# 2. Start PostgreSQL container
-cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+# 2. Start PostgreSQL
 docker compose up -d
 
-# 3. Initialize database
+# 3. Initialize the database schema + sample data
 node scripts/init-db.js
 
-# 4. Start mapa server
+# 4. Start the map server
+npm install
 npm run dev
 ```
 
-**Done!** Mapa is now running at <http://localhost:3000>
+Access the application at:
 
-* * * * *
+👉 **[http://localhost:3000](http://localhost:3000)**
 
-📋 Daily Workflow
------------------
+---
 
-### Starting Everything
+## 🔁 Daily Workflow
 
-bash
+### Starting
 
-```
-# Terminal 1: Start PostgreSQL (if not running)
-cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+```bash
+# Terminal 1 — PostgreSQL
 docker compose up -d
 
-# Terminal 2: Start mapa server
+# Terminal 2 — Map server
 npm run dev
 
-# Terminal 3: Start TIFDA UI
-cd /Users/pablo/Desktop/Scripts/tifda
-uv run python -m src.ui.gradio_interface
-
-# Terminal 4: Run tests
-uv run python tests/test_hitl_radar.py
 ```
 
-### Stopping Everything
+### Stopping
 
-bash
-
-```
-# Stop mapa server: Ctrl+C in terminal 2
-
-# Stop PostgreSQL:
-cd /Users/pablo/Desktop/Scripts/mapa-puntos-interes
+```bash
+Ctrl+C    # stop map server
 docker compose down
 ```
 
-
-
-Abrir: **http://localhost:3000**
-
+### Delete elements of TIFDA demo
+When running the demo of the [TIFDA](https://github.com/MartinezAgullo/genai-tifda) project a set of elements will be automatically created and saved into the mapa. To delete them run:
+```bash
+node delete-tifda-recipients.js
+```
 ---
 
-## 🛠️ Tecnologías
+## ⚙️ Configuration (.env)
 
-- **Backend**: Node.js + Express
-- **Base de datos**: PostgreSQL + PostGIS (Docker en puerto 5433)
-- **Frontend**: HTML5 + CSS3 + Leaflet
-- **Mapas**: OpenStreetMap
+Create a `.env` file in the project root:
 
----
-
-## 📋 Categorías Militares
-
-✈️ Avion • 🛡️ Tanque • 🚁 Drone • 🏕️ BSM • 🎯 Centro de Mando  
-👥 Unidad • ⚔️ Sub-Grupo Tactico • 🎖️ Peloton • 🚗 Vehiculo  
-💣 Artilleria • 🪖 Infanteria • 📍 Otro
-
----
-
-## 🔧 Configuración
-
-**Archivo `.env`:**
 ```env
 DB_HOST=127.0.0.1
-DB_PORT=5433
+DB_PORT=5432
 DB_NAME=puntos_interes_db
 DB_USER=postgres
-DB_PASSWORD=postgres
+DB_PASSWORD=xxxx
 PORT=3000
 NODE_ENV=development
 ```
 
-⚠️ **Nota**: El puerto es **5433** para evitar conflictos con PostgreSQL local.
-
 ---
 
-## 📡 API Endpoints
+## 🌐 API Endpoints
 
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/api/puntos` | Obtener todos los puntos |
-| GET | `/api/puntos/:id` | Obtener por ID |
-| GET | `/api/puntos/categoria/:cat` | Filtrar por categoría |
-| GET | `/api/puntos/cerca/:lng/:lat?radio=50000` | Búsqueda espacial |
-| POST | `/api/puntos` | Crear punto |
-| POST | `/api/puntos/batch` | Crear múltiples |
-| PUT | `/api/puntos/:id` | Actualizar |
-| DELETE | `/api/puntos/:id` | Eliminar |
+| Method | Endpoint                                  | Description                      |
+| ------ | ----------------------------------------- | -------------------------------- |
+| GET    | `/api/puntos`                             | Get all points                   |
+| GET    | `/api/puntos/:id`                         | Get point by ID                  |
+| GET    | `/api/puntos/categoria/:categoria`        | Filter by category               |
+| GET    | `/api/puntos/cerca/:lng/:lat?radio=50000` | Spatial query (radius in meters) |
+| POST   | `/api/puntos`                             | Create a new point               |
+| POST   | `/api/puntos/batch`                       | Create multiple points           |
+| PUT    | `/api/puntos/:id`                         | Update a point                   |
+| DELETE | `/api/puntos/:id`                         | Delete a point                   |
+| GET    | `/api/puntos/meta/categorias`             | List allowed categories          |
 
-**Ejemplo:**
+**Example**
+
 ```bash
 curl http://localhost:3000/api/puntos
 ```
 
 ---
 
-## 📁 Estructura
+## ⭐ Features
+
+### ✓ Military Categories
+
+All entities use a normalized category enum:
+
 ```
-mapa-puntos-interes/
-├── config/          # Configuración BD
-├── models/          # Modelos de datos
-├── routes/          # Rutas API
-├── public/          # Frontend
-├── scripts/         # Scripts de BD
-├── .env             # Variables de entorno
-├── docker-compose.yml
-├── package.json
-└── server.js        # Servidor principal
+missile, fighter, bomber, aircraft, helicopter, uav,
+tank, artillery, ship, destroyer, submarine, ground_vehicle,
+apc, infantry, person, base, building, infrastructure, default
 ```
+
+Each point also includes:
+
+* **country** (e.g., Spain, France, Germany, Portugal, Unknown)
+* **alliance** = friendly | hostile | neutral | unknown
+* **altitude, priority, description, type, identifier**
+* **PostGIS geometry**
+
+### ✓ NATO APP-6 Symbology (automatic)
+
+The map automatically selects the correct symbol based on:
+
+* **Alliance** (`friendly`, `hostile`, `neutral`, `unknown`)
+* **Category**
+* **Country** (when available: e.g., `infantry_spain.svg` → fallback `infantry.svg`)
+
+Details are provided in [**README_symbols.md**](https://github.com/MartinezAgullo/mapa-puntos-interes/tree/main/public/icons/README.md).
+
+### ✓ Integrated Frontend
+
+* Real-time map interaction
+* Add/edit/delete points
+* Category & alliance filtering
+* Popup details
+* Auto-fit map to entities
+
+
+**APP-6 Symbols in Map View**
+![Map with APP6](public/images/map-with-app6.png)
+
+**Create Item**
+![Create Item](public/images/map-create-item.png)
+
+**Delete Item**
+![Delete Item](public/images/mapp-delete-item.png)
+
+### ✓ Technologies
+
+* **Backend:** Node.js + Express
+* **Database:** PostgreSQL + PostGIS (Docker)
+* **Frontend:** HTML5, CSS3, vanilla JS
+* **Mapping:** Leaflet + OpenStreetMap
+* **Icons:** NATO APP-6 (country-aware variants)
 
 ---
 
-## 🔄 Comandos Útiles
-```bash
-# Reiniciar todo
-open -a Docker
-docker compose down -v
-docker compose up -d
-sleep 15
-docker exec -i puntos_interes_postgis psql -U postgres -c "CREATE DATABASE puntos_interes_db;"
-npm run init-db
-npm run dev
+## 📄 License
 
-# Ver datos en BD
-docker exec -it puntos_interes_postgis psql -U postgres -d puntos_interes_db -c "SELECT nombre, categoria FROM puntos_interes;"
+**GNU General Public License (GPL) 3.0**
 
-# Detener
-docker compose down
-```
 
----
 
-## 🐛 Solución de Problemas
-
-**Error: "database does not exist"**
-```bash
-docker exec -i puntos_interes_postgis psql -U postgres -c "CREATE DATABASE puntos_interes_db;"
-npm run init-db
-```
-
-**Error: Puerto en uso**
-```bash
-lsof -i :3000
-# Cambiar puerto en .env
-```
-
-**Limpiar y reiniciar**
-```bash
-docker compose down -v
-docker compose up -d
-```
-
----
-
-## 📝 Ejemplo JSON
-```json
-{
-  "nombre": "Tanque T-72",
-  "descripcion": "Blindado pesado",
-  "categoria": "Tanque",
-  "ciudad": "Madrid",
-  "provincia": "Madrid",
-  "elemento_identificado": "TANK-001",
-  "activo": true,
-  "tipo_elemento": "MBT",
-  "prioridad": 9,
-  "observaciones": "En movimiento",
-  "latitud": 40.4168,
-  "longitud": -3.7038
-}
-```
-
----
-
-## 📄 Licencia
-
-GNU General Public License (GPL) 3.0
-
----
-
-**Desarrollado con Node.js + Express + Leaflet + PostGIS**
 
 <!-- 
 tree -I "__pycache__|__init__.py|uv.lock|README.md|docs|node_modules"
